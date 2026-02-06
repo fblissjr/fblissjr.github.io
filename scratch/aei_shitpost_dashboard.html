@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Anthropic Economic Index: Unhinged Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #141420;
+            --bg-card-hover: #1a1a2a;
+            --border: #2a2a3a;
+            --text: #e0e0e8;
+            --text-dim: #8888a0;
+            --text-bright: #ffffff;
+            --accent-pink: #ff6b9d;
+            --accent-cyan: #00d4ff;
+            --accent-yellow: #ffd93d;
+            --accent-green: #6bff8d;
+            --accent-purple: #b57bff;
+            --accent-orange: #ff8c42;
+            --accent-red: #ff4757;
+            --gap: 16px;
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* HEADER */
+        .hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at center, rgba(255,107,157,0.08) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.06) 0%, transparent 50%);
+            animation: pulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.1) rotate(2deg); }
+        }
+        .hero h1 {
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-cyan), var(--accent-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
+        }
+        .hero .subtitle {
+            font-size: 1.1em;
+            color: var(--text-dim);
+            margin-top: 8px;
+            position: relative;
+            z-index: 1;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hero .data-period {
+            font-size: 0.85em;
+            color: var(--text-dim);
+            margin-top: 16px;
+            opacity: 0.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* SECTION NAVIGATION */
+        .nav-pills {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+        }
+        .nav-pill {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .nav-pill:hover, .nav-pill.active {
+            background: var(--accent-pink);
+            color: var(--bg-dark);
+            border-color: var(--accent-pink);
+        }
+
+        /* KPI ROW */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--gap);
+            margin-bottom: 32px;
+        }
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-cyan);
+        }
+        .kpi-card .emoji {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .kpi-card .kpi-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 4px 0;
+        }
+        .kpi-card .kpi-context {
+            font-size: 0.8em;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+        .kpi-card:nth-child(1) .kpi-value { color: var(--accent-pink); }
+        .kpi-card:nth-child(2) .kpi-value { color: var(--accent-cyan); }
+        .kpi-card:nth-child(3) .kpi-value { color: var(--accent-yellow); }
+        .kpi-card:nth-child(4) .kpi-value { color: var(--accent-green); }
+
+        /* SECTION */
+        .section {
+            margin-bottom: 40px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .section-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75em;
+            color: var(--accent-pink);
+            background: rgba(255,107,157,0.1);
+            border: 1px solid rgba(255,107,157,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .section h2 {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+        .section .hot-take {
+            font-size: 0.9em;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+            padding-left: 4px;
+            border-left: 3px solid var(--accent-cyan);
+            padding: 8px 16px;
+            background: rgba(0,212,255,0.05);
+            border-radius: 0 8px 8px 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* CHART CARDS */
+        .chart-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+        .chart-card h3 {
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+        .chart-card .chart-subtitle {
+            font-size: 0.8em;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .chart-card canvas {
+            max-height: 350px;
+        }
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* COMPARISON CARDS */
+        .vs-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+        }
+        .vs-side {
+            text-align: center;
+        }
+        .vs-side .vs-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+        .vs-side .vs-stat {
+            font-size: 2em;
+            font-weight: 700;
+        }
+        .vs-side .vs-detail {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        .vs-divider {
+            font-size: 1.5em;
+            color: var(--accent-pink);
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .vs-side:first-child .vs-stat { color: var(--accent-cyan); }
+        .vs-side:last-child .vs-stat { color: var(--accent-orange); }
+
+        /* CALLOUT */
+        .callout {
+            background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(0,212,255,0.1));
+            border: 1px solid rgba(255,107,157,0.3);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .callout .callout-stat {
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .callout .callout-text {
+            font-size: 1em;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+
+        /* SORTABLE TABLE */
+        .table-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .table-wrap h3 {
+            padding: 16px 24px 0;
+            font-size: 1em;
+            color: var(--text-bright);
+        }
+        .table-wrap .table-subtitle {
+            padding: 0 24px 12px;
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+        thead th {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        thead th:hover { color: var(--accent-cyan); }
+        tbody td {
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(42,42,58,0.5);
+        }
+        tbody tr:hover { background: var(--bg-card-hover); }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+            font-size: 0.8em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .footer a { color: var(--accent-cyan); text-decoration: none; }
+
+        /* SCROLL ANIMATION */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* FILTER BAR */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.8em; }
+            .chart-row { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .vs-card { grid-template-columns: 1fr; }
+            .vs-divider { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HERO -->
+    <div class="hero">
+        <h1>The AEI: Unhinged Edition</h1>
+        <div class="subtitle">real data. questionable commentary.</div>
+        <div class="data-period">Anthropic Economic Index // Claude AI Usage // Aug 4-11, 2025 // 174 countries // 51 US states</div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <section class="kpi-row fade-in">
+        <div class="kpi-card">
+            <div class="emoji">&#x1F30D;</div>
+            <div class="kpi-label">Countries Analyzed</div>
+            <div class="kpi-value">174</div>
+            <div class="kpi-context">18 of them literally used Claude zero times</div>
+        </div>
+        <div class="kpi-card">
+            <div class="emoji">&#x1F4CA;</div>
+            <div class="kpi-label">Max/Min Usage Ratio</div>
+            <div class="kpi-value">486x</div>
+            <div class="kpi-context">Israel vs. the bottom. Not even close.</div>
+        </div>
+        <div class="kpi-card">
+            <div class="emoji">&#x1F9D1;&#x200D;&#x2695;&#xFE0F;</div>
+            <div class="kpi-label">People Asking For Life Advice</div>
+            <div class="kpi-value">9.4%</div>
+            <div class="kpi-context">Medical + financial + lifestyle guidance</div>
+        </div>
+        <div class="kpi-card">
+            <div class="emoji">&#x1F41B;</div>
+            <div class="kpi-label">Secret Debugging Category</div>
+            <div class="kpi-value">17.3%</div>
+            <div class="kpi-context">Hidden across 40+ O*NET codes. We see you.</div>
+        </div>
+    </section>
+
+    <!-- SECTION 1: THE GEOGRAPHY OF VIBES -->
+    <section class="section fade-in" id="section-geo">
+        <div class="section-header">
+            <span class="section-number">01</span>
+            <h2>The Geography of Vibes</h2>
+        </div>
+        <div class="hot-take">GDP explains some AI adoption. But not nearly as much as you'd think. The correlation is strong (r=0.83 log-log) but the residuals tell a wilder story.</div>
+
+        <div class="chart-row">
+            <div class="chart-card">
+                <h3>GDP vs. AI Adoption: The Scatter That Humbles Economists</h3>
+                <div class="chart-subtitle">log scale // each dot = a country // the trend line is a power law (exponent 0.79)</div>
+                <canvas id="gdp-scatter"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Europe vs. The Anglosphere: A Cultural Divorce</h3>
+                <div class="chart-subtitle">similar GDP, wildly different Claude usage // maybe GDPR was the wrong hill</div>
+                <canvas id="europe-anglo"></canvas>
+            </div>
+        </div>
+
+        <div class="callout">
+            <div class="callout-stat">70% vs 49%</div>
+            <div class="callout-text">Poorest countries automate 70% of their Claude usage. Richest countries? Only 49%.<br>The richer you are, the more you want to <em>collaborate</em> with AI instead of just telling it what to do.</div>
+        </div>
+
+        <div class="chart-row">
+            <div class="chart-card">
+                <h3>The Automation Ladder: Richer = More Chatty</h3>
+                <div class="chart-subtitle">automation vs augmentation by GDP quartile // poor countries: "just do it" // rich countries: "let's discuss"</div>
+                <canvas id="auto-aug-bars"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Countries Punching Above Their Weight</h3>
+                <div class="chart-subtitle">usage way higher than GDP would predict // these nations didn't get the memo about wealth = adoption</div>
+                <canvas id="overperformers"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: HEAD TO HEADS -->
+    <section class="section fade-in" id="section-vs">
+        <div class="section-header">
+            <span class="section-number">02</span>
+            <h2>Head-to-Head Matchups Nobody Asked For</h2>
+        </div>
+        <div class="hot-take">Same GDP. Same planet. Completely different AI universes.</div>
+
+        <div class="chart-row">
+            <div class="vs-card">
+                <div class="vs-side">
+                    <div class="vs-name">&#x1F3D4;&#xFE0F; Utah</div>
+                    <div class="vs-stat">3.78x</div>
+                    <div class="vs-detail">Usage Index (Rank #2)</div>
+                    <div class="vs-detail">GDP: $130K</div>
+                    <div class="vs-detail">73% automation</div>
+                    <div class="vs-detail">Silicon Slopes energy</div>
+                </div>
+                <div class="vs-divider">vs</div>
+                <div class="vs-side">
+                    <div class="vs-name">&#x1F33E; South Dakota</div>
+                    <div class="vs-stat">0.26x</div>
+                    <div class="vs-detail">Usage Index (Rank #51. Dead last.)</div>
+                    <div class="vs-detail">GDP: $133K</div>
+                    <div class="vs-detail">64% automation</div>
+                    <div class="vs-detail">Mount Rushmore energy</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-row">
+            <div class="vs-card">
+                <div class="vs-side">
+                    <div class="vs-name">&#x1F1EE;&#x1F1F3; India</div>
+                    <div class="vs-stat">7.15%</div>
+                    <div class="vs-detail">Share of ALL Claude usage</div>
+                    <div class="vs-detail">1.4 billion people</div>
+                    <div class="vs-detail">Per-capita: bottom 5%</div>
+                </div>
+                <div class="vs-divider">vs</div>
+                <div class="vs-side">
+                    <div class="vs-name">&#x1F1EE;&#x1F1F1; Israel</div>
+                    <div class="vs-stat">486x</div>
+                    <div class="vs-detail">Per-capita index (highest globally)</div>
+                    <div class="vs-detail">9.8 million people</div>
+                    <div class="vs-detail">Volume: way less than India</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-row">
+            <div class="vs-card">
+                <div class="vs-side">
+                    <div class="vs-name">&#x1F1E6;&#x1F1FA; Australia</div>
+                    <div class="vs-stat">4.10x</div>
+                    <div class="vs-detail">Usage Index (95th percentile)</div>
+                    <div class="vs-detail">GDP: $103K</div>
+                </div>
+                <div class="vs-divider">vs</div>
+                <div class="vs-side">
+                    <div class="vs-name">&#x1F1E9;&#x1F1EA; Germany</div>
+                    <div class="vs-stat">1.84x</div>
+                    <div class="vs-detail">Usage Index (32nd percentile)</div>
+                    <div class="vs-detail">GDP: $89K</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: WHAT ARE YOU ACTUALLY DOING -->
+    <section class="section fade-in" id="section-tasks">
+        <div class="section-header">
+            <span class="section-number">03</span>
+            <h2>What Are You Actually Doing With Claude?</h2>
+        </div>
+        <div class="hot-take">Everyone says "coding assistant." The data says "also my editor, translator, tutor, therapist, and debugging partner I'm too embarrassed to admit I need."</div>
+
+        <div class="chart-row">
+            <div class="chart-card">
+                <h3>The Real Task Breakdown (They Don't Want You To See This)</h3>
+                <div class="chart-subtitle">O*NET tasks, aggregated for once instead of scattered across 200 codes</div>
+                <canvas id="task-breakdown"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>How People Actually Interact With Claude</h3>
+                <div class="chart-subtitle">collaboration patterns // "directive" = "just do it" // "learning" = "explain it to me like I'm 5"</div>
+                <canvas id="collab-patterns"></canvas>
+            </div>
+        </div>
+
+        <div class="callout">
+            <div class="callout-stat">Writing = 53% of Coding</div>
+            <div class="callout-text">Programming tasks: 32%. Writing tasks: 17%. Claude is secretly one of the world's most-used writing tools.<br>But sure, let's keep calling it a "coding assistant."</div>
+        </div>
+
+        <div class="chart-row">
+            <div class="chart-card">
+                <h3>Claude: Your Lowkey Life Coach</h3>
+                <div class="chart-subtitle">personal advice requests breakdown // yes, people are asking an AI about their health and finances</div>
+                <canvas id="life-advice"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>The Translation Economy Nobody Talks About</h3>
+                <div class="chart-subtitle">5.8% of all requests // #5 category // zero marketing dollars spent on this</div>
+                <canvas id="request-types"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: THE STATISTICAL CRIMES -->
+    <section class="section fade-in" id="section-stats">
+        <div class="section-header">
+            <span class="section-number">04</span>
+            <h2>Statistical Crimes & Power Laws</h2>
+        </div>
+        <div class="hot-take">The data is so skewed it would make a stats professor cry. Top 55% of countries = 90% of all usage. That's not a bell curve, that's a cliff.</div>
+
+        <div class="chart-row">
+            <div class="chart-card">
+                <h3>The Inequality Chart: AI Adoption is Not Democratic</h3>
+                <div class="chart-subtitle">distribution of usage per capita index // skewness: 1.96 // kurtosis: 5.62 // "normal" this is not</div>
+                <canvas id="distribution"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Augmentation Countries Use Claude 7.6x More</h3>
+                <div class="chart-subtitle">countries that prefer augmentation avg 2.44x usage // automation-focused countries avg 0.32x // p&lt;0.001</div>
+                <canvas id="strategy-usage"></canvas>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD TABLE -->
+        <div class="table-wrap">
+            <h3>The Definitive Country Leaderboard (Sorted by Vibes)</h3>
+            <div class="table-subtitle">click headers to sort // "punch factor" = how much they over/under-perform vs GDP</div>
+            <div id="country-table"></div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: ISLAND NATIONS -->
+    <section class="section fade-in" id="section-islands">
+        <div class="section-header">
+            <span class="section-number">05</span>
+            <h2>The Island Nation Conspiracy</h2>
+        </div>
+        <div class="hot-take">Rich island nations just... don't care about AI? Aruba ($55K GDP) is in the bottom 5% for adoption. 15 of 18 zero-usage countries are islands. They're too busy being on a beach.</div>
+
+        <div class="chart-row">
+            <div class="chart-card full-width">
+                <h3>Island Wealth vs. AI Interest: An Inverse Relationship With The Beach</h3>
+                <div class="chart-subtitle">wealthy island nations highlighted in pink // mainland peers in cyan // the beach always wins</div>
+                <canvas id="island-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-row">
+            <div class="chart-card">
+                <h3>Sub-Saharan Africa: Collaboration Kings</h3>
+                <div class="chart-subtitle">poorest countries have the HIGHEST collaboration indices // Mozambique: $1,201 GDP, 1.44 collab index // Canada: $83K GDP, 0.84 collab index</div>
+                <canvas id="africa-collab"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>US States: Who's Actually Using Claude?</h3>
+                <div class="chart-subtitle">DC leads because of course it does // Utah's "Silicon Slopes" is real // Mississippi... exists</div>
+                <canvas id="us-states"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p>built with real data from the Anthropic Economic Index (Aug 4-11, 2025)</p>
+        <p>174 countries // 136,845 rows // 23 variables // 0 editorial restraint</p>
+        <p style="margin-top: 8px; opacity: 0.5;">disclaimer: the data is real, the commentary is not investment advice</p>
+    </div>
+
+</div>
+
+<script>
+// ============================================================
+// COLOR PALETTE
+// ============================================================
+const COLORS = {
+    pink: '#ff6b9d',
+    cyan: '#00d4ff',
+    yellow: '#ffd93d',
+    green: '#6bff8d',
+    purple: '#b57bff',
+    orange: '#ff8c42',
+    red: '#ff4757',
+    dim: '#555570'
+};
+const CHART_COLORS = [COLORS.pink, COLORS.cyan, COLORS.yellow, COLORS.green, COLORS.purple, COLORS.orange, COLORS.red];
+
+// Chart.js global defaults
+Chart.defaults.color = '#8888a0';
+Chart.defaults.borderColor = 'rgba(42,42,58,0.5)';
+Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+
+// ============================================================
+// DATA (pre-aggregated from analysis)
+// ============================================================
+
+const GEO_DATA = {
+    overperformers: [
+        { country: 'Georgia', gdp: 14463, usage: 2.19, residual: 1.90 },
+        { country: 'Nepal', gdp: 2250, usage: 0.42, residual: 1.65 },
+        { country: 'Sri Lanka', gdp: 6856, usage: 1.01, residual: 1.64 },
+        { country: 'Armenia', gdp: 12551, usage: 1.54, residual: 1.57 },
+        { country: 'Tunisia', gdp: 6506, usage: 0.89, residual: 1.52 },
+        { country: 'Ukraine', gdp: 7490, usage: 0.92, residual: 1.40 }
+    ],
+    europe_vs_anglo: {
+        europe: [
+            { country: 'Austria', gdp: 87151, usage: 1.67 },
+            { country: 'Germany', gdp: 88694, usage: 1.84 },
+            { country: 'Belgium', gdp: 88246, usage: 1.86 },
+            { country: 'Finland', gdp: 86239, usage: 1.89 },
+            { country: 'Sweden', gdp: 92702, usage: 2.20 },
+            { country: 'Norway', gdp: 133500, usage: 2.26 }
+        ],
+        anglo: [
+            { country: 'Australia', gdp: 102513, usage: 4.10 },
+            { country: 'US', gdp: 132532, usage: 3.62 },
+            { country: 'Canada', gdp: 83397, usage: 2.91 },
+            { country: 'New Zealand', gdp: 67000, usage: 3.80 }
+        ]
+    },
+    auto_aug_by_gdp: {
+        labels: ['Q1: Poorest\n($4.5K avg)', 'Q2\n($12.5K avg)', 'Q3\n($35K avg)', 'Q4: Richest\n($120K avg)'],
+        automation: [69.6, 58.0, 53.9, 49.1],
+        augmentation: [30.4, 42.0, 46.1, 50.9]
+    },
+    islands: [
+        { country: 'Aruba', gdp: 55554, usage: 0.11, island: true },
+        { country: 'St. Kitts', gdp: 33783, usage: 0.27, island: true },
+        { country: 'Antigua', gdp: 33697, usage: 0.19, island: true },
+        { country: 'Palau', gdp: 24559, usage: 0.19, island: true },
+        { country: 'Israel', gdp: 56000, usage: 8.50, island: false },
+        { country: 'Singapore', gdp: 95000, usage: 6.20, island: false },
+        { country: 'Australia', gdp: 102513, usage: 4.10, island: false },
+        { country: 'South Korea', gdp: 50000, usage: 4.00, island: false },
+        { country: 'US', gdp: 132532, usage: 3.62, island: false },
+        { country: 'Germany', gdp: 88694, usage: 1.84, island: false }
+    ],
+    africa_collab: [
+        { country: 'Mozambique', collab: 1.44, gdp: 1201 },
+        { country: 'Zambia', collab: 1.32, gdp: 2182 },
+        { country: 'Burkina Faso', collab: 1.30, gdp: 1833 },
+        { country: 'Pakistan', collab: 1.25, gdp: 2515 },
+        { country: 'Nigeria', collab: 1.20, gdp: 1442 },
+        { country: 'Canada', collab: 0.84, gdp: 83397 },
+        { country: 'Austria', collab: 0.85, gdp: 87151 },
+        { country: 'Australia', collab: 0.93, gdp: 102513 }
+    ],
+    us_states: [
+        { state: 'DC', usage: 3.82 },
+        { state: 'Utah', usage: 3.78 },
+        { state: 'California', usage: 2.90 },
+        { state: 'Washington', usage: 2.60 },
+        { state: 'Colorado', usage: 2.20 },
+        { state: 'Massachusetts', usage: 2.10 },
+        { state: 'Virginia', usage: 1.80 },
+        { state: 'New York', usage: 1.70 },
+        { state: 'Oregon', usage: 1.60 },
+        { state: 'Texas', usage: 1.40 },
+        { state: 'Wyoming', usage: 0.30 },
+        { state: 'Mississippi', usage: 0.28 },
+        { state: 'S. Dakota', usage: 0.26 }
+    ],
+    scatter_all: [
+        { country: 'Israel', gdp: 56000, usage: 8.50 },
+        { country: 'Singapore', gdp: 95000, usage: 6.20 },
+        { country: 'Australia', gdp: 102513, usage: 4.10 },
+        { country: 'NZ', gdp: 67000, usage: 3.80 },
+        { country: 'US', gdp: 132532, usage: 3.62 },
+        { country: 'South Korea', gdp: 50000, usage: 4.00 },
+        { country: 'Canada', gdp: 83397, usage: 2.91 },
+        { country: 'UK', gdp: 75000, usage: 2.60 },
+        { country: 'Norway', gdp: 133500, usage: 2.26 },
+        { country: 'Sweden', gdp: 92702, usage: 2.20 },
+        { country: 'Georgia', gdp: 14463, usage: 2.19 },
+        { country: 'Belgium', gdp: 88246, usage: 1.86 },
+        { country: 'Germany', gdp: 88694, usage: 1.84 },
+        { country: 'Finland', gdp: 86239, usage: 1.89 },
+        { country: 'Austria', gdp: 87151, usage: 1.67 },
+        { country: 'Armenia', gdp: 12551, usage: 1.54 },
+        { country: 'Sri Lanka', gdp: 6856, usage: 1.01 },
+        { country: 'Ukraine', gdp: 7490, usage: 0.92 },
+        { country: 'Tunisia', gdp: 6506, usage: 0.89 },
+        { country: 'Nepal', gdp: 2250, usage: 0.42 },
+        { country: 'India', gdp: 3949, usage: 0.27 },
+        { country: 'Aruba', gdp: 55554, usage: 0.11 },
+        { country: 'St. Kitts', gdp: 33783, usage: 0.27 },
+        { country: 'Japan', gdp: 65000, usage: 2.80 },
+        { country: 'France', gdp: 73000, usage: 2.10 },
+        { country: 'Brazil', gdp: 15000, usage: 0.60 },
+        { country: 'Mexico', gdp: 18000, usage: 0.55 },
+        { country: 'South Africa', gdp: 12000, usage: 0.50 },
+        { country: 'Nigeria', gdp: 1442, usage: 0.20 },
+        { country: 'Kenya', gdp: 3500, usage: 0.35 }
+    ]
+};
+
+const TASK_DATA = {
+    breakdown: {
+        labels: ['Programming', 'Debugging (hidden!)', 'Writing/Editing', 'Education', 'Translation', 'Personal Advice', 'Data Analysis', 'Other'],
+        data: [32, 17.3, 17, 7.5, 5.8, 9.4, 5, 6]
+    },
+    collab_patterns: {
+        labels: ['Directive\n"Just do it"', 'Task Iteration\n"Try again"', 'Learning\n"Explain this"', 'Feedback Loop\n"Review this"', 'Other'],
+        data: [38.8, 22.2, 20.3, 10.3, 8.4]
+    },
+    life_advice: {
+        labels: ['Financial guidance', 'Medical/sports', 'Lifestyle advice', 'Career advice'],
+        data: [4.0, 3.0, 2.7, 2.2]
+    },
+    request_types: {
+        labels: ['Software Dev', 'Education', 'Translation', 'Financial', 'Medical/Sports', 'Creative Writing', 'Data Analysis', 'Lifestyle'],
+        data: [18.5, 7.5, 5.8, 4.0, 3.0, 3.5, 3.0, 2.7]
+    }
+};
+
+const STATS_DATA = {
+    distribution: {
+        bins: ['0-0.5', '0.5-1', '1-1.5', '1.5-2', '2-3', '3-4', '4-6', '6+'],
+        counts: [68, 25, 18, 12, 15, 8, 5, 5]
+    },
+    strategy_comparison: {
+        labels: ['Automation-Focused\n(41 countries)', 'Augmentation-Focused\n(35 countries)'],
+        usage: [0.32, 2.44]
+    },
+    leaderboard: [
+        { country: 'Israel', gdp: 56000, usage: 8.50, auto: 45, aug: 55, vibe: 'Startup Nation' },
+        { country: 'Singapore', gdp: 95000, usage: 6.20, auto: 47, aug: 53, vibe: 'Tech Hub' },
+        { country: 'Australia', gdp: 102513, usage: 4.10, auto: 48, aug: 52, vibe: 'Vibing' },
+        { country: 'New Zealand', gdp: 67000, usage: 3.80, auto: 46, aug: 54, vibe: 'Hobbit AI' },
+        { country: 'South Korea', gdp: 50000, usage: 4.00, auto: 44, aug: 56, vibe: 'K-AI' },
+        { country: 'US', gdp: 132532, usage: 3.62, auto: 50, aug: 50, vibe: 'Expected' },
+        { country: 'Japan', gdp: 65000, usage: 2.80, auto: 43, aug: 57, vibe: 'Augment Gang' },
+        { country: 'Canada', gdp: 83397, usage: 2.91, auto: 48, aug: 52, vibe: 'Polite AI' },
+        { country: 'Georgia', gdp: 14463, usage: 2.19, auto: 52, aug: 48, vibe: 'Dark Horse' },
+        { country: 'Germany', gdp: 88694, usage: 1.84, auto: 48, aug: 52, vibe: 'GDPR\'d' },
+        { country: 'India', gdp: 3949, usage: 0.27, auto: 60, aug: 40, vibe: 'Garden Hose' },
+        { country: 'Aruba', gdp: 55554, usage: 0.11, auto: 100, aug: 0, vibe: 'Beach Mode' },
+        { country: 'S. Dakota (state)', gdp: 132812, usage: 0.26, auto: 64, aug: 36, vibe: 'Unplugged' }
+    ]
+};
+
+// ============================================================
+// CHART RENDERING
+// ============================================================
+
+function initCharts() {
+
+    // --- GDP vs Usage Scatter ---
+    new Chart(document.getElementById('gdp-scatter'), {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'Countries',
+                    data: GEO_DATA.scatter_all.map(d => ({ x: d.gdp, y: d.usage })),
+                    backgroundColor: COLORS.cyan + '80',
+                    borderColor: COLORS.cyan,
+                    borderWidth: 1,
+                    pointRadius: 6,
+                    pointHoverRadius: 10,
+                },
+                {
+                    label: 'Overperformers',
+                    data: GEO_DATA.overperformers.map(d => ({ x: d.gdp, y: d.usage })),
+                    backgroundColor: COLORS.yellow + '80',
+                    borderColor: COLORS.yellow,
+                    borderWidth: 2,
+                    pointRadius: 8,
+                    pointHoverRadius: 12,
+                    pointStyle: 'star',
+                },
+                {
+                    label: 'Rich Islands',
+                    data: GEO_DATA.islands.filter(d => d.island).map(d => ({ x: d.gdp, y: d.usage })),
+                    backgroundColor: COLORS.pink + '80',
+                    borderColor: COLORS.pink,
+                    borderWidth: 2,
+                    pointRadius: 8,
+                    pointHoverRadius: 12,
+                    pointStyle: 'triangle',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const allData = [...GEO_DATA.scatter_all, ...GEO_DATA.overperformers, ...GEO_DATA.islands.filter(d=>d.island)];
+                            const match = allData.find(d => Math.abs(d.gdp - ctx.parsed.x) < 100 && Math.abs(d.usage - ctx.parsed.y) < 0.05);
+                            const name = match ? match.country : '';
+                            return `${name}: $${(ctx.parsed.x/1000).toFixed(0)}K GDP, ${ctx.parsed.y.toFixed(2)}x usage`;
+                        }
+                    }
+                },
+                legend: { labels: { usePointStyle: true, padding: 16 } }
+            },
+            scales: {
+                x: {
+                    type: 'logarithmic',
+                    title: { display: true, text: 'GDP per capita (log scale)', color: '#8888a0' },
+                    ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' }
+                },
+                y: {
+                    type: 'logarithmic',
+                    title: { display: true, text: 'Usage Index (log scale)', color: '#8888a0' },
+                    min: 0.05
+                }
+            }
+        }
+    });
+
+    // --- Europe vs Anglo ---
+    const euroAngloLabels = [
+        ...GEO_DATA.europe_vs_anglo.europe.map(d => d.country),
+        ...GEO_DATA.europe_vs_anglo.anglo.map(d => d.country)
+    ];
+    const euroAngloData = [
+        ...GEO_DATA.europe_vs_anglo.europe.map(d => d.usage),
+        ...GEO_DATA.europe_vs_anglo.anglo.map(d => d.usage)
+    ];
+    const euroAngloColors = [
+        ...GEO_DATA.europe_vs_anglo.europe.map(() => COLORS.orange + 'CC'),
+        ...GEO_DATA.europe_vs_anglo.anglo.map(() => COLORS.cyan + 'CC')
+    ];
+
+    new Chart(document.getElementById('europe-anglo'), {
+        type: 'bar',
+        data: {
+            labels: euroAngloLabels,
+            datasets: [{
+                label: 'Usage Index',
+                data: euroAngloData,
+                backgroundColor: euroAngloColors,
+                borderColor: euroAngloColors.map(c => c.replace('CC', '')),
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(ctx) {
+                            const all = [...GEO_DATA.europe_vs_anglo.europe, ...GEO_DATA.europe_vs_anglo.anglo];
+                            return `GDP: $${(all[ctx.dataIndex].gdp/1000).toFixed(0)}K`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { beginAtZero: true, title: { display: true, text: 'Usage Index', color: '#8888a0' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    // --- Automation vs Augmentation by GDP quartile ---
+    new Chart(document.getElementById('auto-aug-bars'), {
+        type: 'bar',
+        data: {
+            labels: GEO_DATA.auto_aug_by_gdp.labels,
+            datasets: [
+                {
+                    label: 'Automation %',
+                    data: GEO_DATA.auto_aug_by_gdp.automation,
+                    backgroundColor: COLORS.red + 'CC',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Augmentation %',
+                    data: GEO_DATA.auto_aug_by_gdp.augmentation,
+                    backgroundColor: COLORS.green + 'CC',
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { usePointStyle: true, padding: 16 } },
+                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%` } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+            }
+        }
+    });
+
+    // --- Overperformers ---
+    new Chart(document.getElementById('overperformers'), {
+        type: 'bar',
+        data: {
+            labels: GEO_DATA.overperformers.map(d => d.country),
+            datasets: [
+                {
+                    label: 'Usage Index',
+                    data: GEO_DATA.overperformers.map(d => d.usage),
+                    backgroundColor: COLORS.yellow + 'CC',
+                    borderRadius: 4,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'GDP per capita ($K)',
+                    data: GEO_DATA.overperformers.map(d => d.gdp / 1000),
+                    backgroundColor: COLORS.dim + '80',
+                    borderRadius: 4,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { usePointStyle: true, padding: 16 } } },
+            scales: {
+                y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Usage Index', color: '#8888a0' } },
+                y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'GDP ($K)', color: '#8888a0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // --- Task Breakdown ---
+    new Chart(document.getElementById('task-breakdown'), {
+        type: 'doughnut',
+        data: {
+            labels: TASK_DATA.breakdown.labels,
+            datasets: [{
+                data: TASK_DATA.breakdown.data,
+                backgroundColor: CHART_COLORS.map(c => c + 'CC'),
+                borderColor: '#141420',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+                legend: { position: 'right', labels: { usePointStyle: true, padding: 12, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}%` } }
+            }
+        }
+    });
+
+    // --- Collaboration Patterns ---
+    new Chart(document.getElementById('collab-patterns'), {
+        type: 'bar',
+        data: {
+            labels: TASK_DATA.collab_patterns.labels,
+            datasets: [{
+                data: TASK_DATA.collab_patterns.data,
+                backgroundColor: [COLORS.pink + 'CC', COLORS.cyan + 'CC', COLORS.yellow + 'CC', COLORS.green + 'CC', COLORS.dim + '80'],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.parsed.x}%` } }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { callback: v => v + '%' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    // --- Life Advice ---
+    new Chart(document.getElementById('life-advice'), {
+        type: 'bar',
+        data: {
+            labels: TASK_DATA.life_advice.labels,
+            datasets: [{
+                data: TASK_DATA.life_advice.data,
+                backgroundColor: [COLORS.green + 'CC', COLORS.pink + 'CC', COLORS.purple + 'CC', COLORS.cyan + 'CC'],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.parsed.y}% of all requests` } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { callback: v => v + '%' } }
+            }
+        }
+    });
+
+    // --- Request Types ---
+    new Chart(document.getElementById('request-types'), {
+        type: 'bar',
+        data: {
+            labels: TASK_DATA.request_types.labels,
+            datasets: [{
+                data: TASK_DATA.request_types.data,
+                backgroundColor: CHART_COLORS.map(c => c + 'CC').concat([COLORS.dim + '80']),
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.parsed.x}% of requests` } }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { callback: v => v + '%' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    // --- Distribution ---
+    new Chart(document.getElementById('distribution'), {
+        type: 'bar',
+        data: {
+            labels: STATS_DATA.distribution.bins,
+            datasets: [{
+                label: 'Number of Countries',
+                data: STATS_DATA.distribution.counts,
+                backgroundColor: STATS_DATA.distribution.counts.map((c, i) =>
+                    i === 0 ? COLORS.red + 'CC' : i < 3 ? COLORS.orange + 'CC' : COLORS.cyan + 'CC'
+                ),
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} countries` } }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Usage Per Capita Index Range', color: '#8888a0' }, grid: { display: false } },
+                y: { beginAtZero: true, title: { display: true, text: 'Number of Countries', color: '#8888a0' } }
+            }
+        }
+    });
+
+    // --- Strategy vs Usage ---
+    new Chart(document.getElementById('strategy-usage'), {
+        type: 'bar',
+        data: {
+            labels: STATS_DATA.strategy_comparison.labels,
+            datasets: [{
+                data: STATS_DATA.strategy_comparison.usage,
+                backgroundColor: [COLORS.red + 'CC', COLORS.green + 'CC'],
+                borderRadius: 8,
+                barPercentage: 0.6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `Avg usage index: ${ctx.parsed.y}x` } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, title: { display: true, text: 'Average Usage Index', color: '#8888a0' } }
+            }
+        }
+    });
+
+    // --- Island Chart ---
+    new Chart(document.getElementById('island-chart'), {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'Rich Islands (Beach Mode)',
+                    data: GEO_DATA.islands.filter(d => d.island).map(d => ({ x: d.gdp, y: d.usage })),
+                    backgroundColor: COLORS.pink + '80',
+                    borderColor: COLORS.pink,
+                    borderWidth: 2,
+                    pointRadius: 10,
+                    pointHoverRadius: 14,
+                    pointStyle: 'triangle',
+                },
+                {
+                    label: 'Mainland Countries',
+                    data: GEO_DATA.islands.filter(d => !d.island).map(d => ({ x: d.gdp, y: d.usage })),
+                    backgroundColor: COLORS.cyan + '80',
+                    borderColor: COLORS.cyan,
+                    borderWidth: 1,
+                    pointRadius: 7,
+                    pointHoverRadius: 10,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { usePointStyle: true, padding: 16 } },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const data = GEO_DATA.islands;
+                            const islandData = ctx.datasetIndex === 0 ? data.filter(d => d.island) : data.filter(d => !d.island);
+                            const point = islandData[ctx.dataIndex];
+                            return `${point.country}: $${(point.gdp/1000).toFixed(0)}K GDP, ${point.usage.toFixed(2)}x usage`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { title: { display: true, text: 'GDP per capita', color: '#8888a0' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } },
+                y: { title: { display: true, text: 'Usage Index', color: '#8888a0' }, beginAtZero: true }
+            }
+        }
+    });
+
+    // --- Africa Collab ---
+    const africaLabels = GEO_DATA.africa_collab.map(d => d.country);
+    const africaColors = GEO_DATA.africa_collab.map(d => d.gdp < 5000 ? COLORS.yellow + 'CC' : COLORS.dim + '80');
+    new Chart(document.getElementById('africa-collab'), {
+        type: 'bar',
+        data: {
+            labels: africaLabels,
+            datasets: [{
+                label: 'Collaboration Index',
+                data: GEO_DATA.africa_collab.map(d => d.collab),
+                backgroundColor: africaColors,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: ctx => `GDP: $${GEO_DATA.africa_collab[ctx.dataIndex].gdp.toLocaleString()}`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, title: { display: true, text: 'Collab Index', color: '#8888a0' } }
+            }
+        }
+    });
+
+    // --- US States ---
+    const stateColors = GEO_DATA.us_states.map(d =>
+        d.usage > 2.5 ? COLORS.cyan + 'CC' :
+        d.usage > 1 ? COLORS.green + 'CC' :
+        d.usage > 0.5 ? COLORS.yellow + 'CC' :
+        COLORS.red + 'CC'
+    );
+    new Chart(document.getElementById('us-states'), {
+        type: 'bar',
+        data: {
+            labels: GEO_DATA.us_states.map(d => d.state),
+            datasets: [{
+                data: GEO_DATA.us_states.map(d => d.usage),
+                backgroundColor: stateColors,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `Usage Index: ${ctx.parsed.x}x` } }
+            },
+            scales: {
+                x: { beginAtZero: true, title: { display: true, text: 'Usage Index', color: '#8888a0' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// ============================================================
+// SORTABLE TABLE
+// ============================================================
+function renderLeaderboard() {
+    const container = document.getElementById('country-table');
+    const data = STATS_DATA.leaderboard;
+    let sortCol = 'usage';
+    let sortDir = 'desc';
+
+    function render(sorted) {
+        let html = '<table><thead><tr>';
+        const cols = [
+            { key: 'country', label: 'Country' },
+            { key: 'gdp', label: 'GDP/Cap' },
+            { key: 'usage', label: 'Usage Idx' },
+            { key: 'auto', label: 'Auto %' },
+            { key: 'aug', label: 'Aug %' },
+            { key: 'vibe', label: 'Vibe Check' }
+        ];
+        cols.forEach(c => {
+            const arrow = sortCol === c.key ? (sortDir === 'asc' ? ' &#9650;' : ' &#9660;') : '';
+            html += `<th data-col="${c.key}">${c.label}${arrow}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        sorted.forEach((row, i) => {
+            const usageColor = row.usage > 3 ? COLORS.green : row.usage > 1 ? COLORS.yellow : COLORS.red;
+            html += `<tr>
+                <td style="font-weight:600">${row.country}</td>
+                <td>$${(row.gdp/1000).toFixed(0)}K</td>
+                <td style="color:${usageColor};font-weight:700">${row.usage.toFixed(2)}x</td>
+                <td>${row.auto}%</td>
+                <td>${row.aug}%</td>
+                <td style="color:${COLORS.purple};font-family:'JetBrains Mono',monospace;font-size:0.85em">${row.vibe}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        // Attach sort handlers
+        container.querySelectorAll('th').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                if (sortCol === col) {
+                    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortCol = col;
+                    sortDir = 'desc';
+                }
+                const newSorted = [...data].sort((a, b) => {
+                    const av = a[col], bv = b[col];
+                    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+                    return sortDir === 'asc' ? cmp : -cmp;
+                });
+                render(newSorted);
+            });
+        });
+    }
+
+    const initial = [...data].sort((a, b) => b.usage - a.usage);
+    render(initial);
+}
+
+// ============================================================
+// SCROLL ANIMATIONS
+// ============================================================
+function initScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    renderLeaderboard();
+    initScrollAnimations();
+});
+</script>
+
+</body>
+</html>
